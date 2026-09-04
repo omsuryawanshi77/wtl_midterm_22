@@ -24,7 +24,6 @@
             margin-top: 10px;
         }
 
-        /* Success Message Banner */
         #statusMessage {
             display: none;
             padding: 12px;
@@ -93,7 +92,6 @@
             background-color: #f2f2f2;
         }
 
-        /* Thumbnail Image Styling */
         .mentor-photo {
             width: 50px;
             height: 50px;
@@ -120,7 +118,6 @@
         <h1>Mentor Management System</h1>
     </header>
 
-    <!-- Top Success Notification Banner -->
     <div id="statusMessage"></div>
     <hr>
 
@@ -167,36 +164,22 @@
                 <th>Action</th>
             </tr>
         </thead>
-        <tbody id="mentorTableBody">
-            <tr>
-                <td class="row-name">John Doe</td>
-                <td class="row-emp-id">EMP101</td>
-                <td class="row-dept">Computer Engineering</td>
-                <td class="row-desig">Assistant Professor</td>
-                <td class="row-max">20</td>
-                <td class="row-photo">
-                    <img src="https://via.placeholder.com/50" class="mentor-photo" alt="Photo">
-                </td>
-                <td>
-                    <button type="button" onclick="openEditModal(this)">Edit</button>
-                    <button type="button" style="background-color: #dc3545;" onclick="confirmDelete(this)">Delete</button>
-                </td>
-            </tr>
-        </tbody>
+        <tbody id="mentorTableBody"></tbody>
     </table>
 
-    <!-- Edit Popup Dialog Modal -->
     <dialog id="editModal">
         <h3>Edit Mentor</h3>
-        <form id="editMentorForm">
+        <form id="editMentorForm" enctype="multipart/form-data">
+            <input type="hidden" id="edit_id" name="id">
+
             <label>Mentor Name:</label>
-            <input type="text" id="edit_name" required>
+            <input type="text" id="edit_name" name="name" required>
 
             <label>Employee ID:</label>
-            <input type="text" id="edit_emp_id" required>
+            <input type="text" id="edit_emp_id" name="emp_id" required>
 
             <label>Department:</label>
-            <select id="edit_department" required>
+            <select id="edit_department" name="department" required>
                 <option value="Computer Engineering">Computer Engineering</option>
                 <option value="Information Technology">Information Technology</option>
                 <option value="Electronics & Telecom">Electronics & Telecom</option>
@@ -204,13 +187,13 @@
             </select>
 
             <label>Designation:</label>
-            <input type="text" id="edit_designation" required>
+            <input type="text" id="edit_designation" name="designation" required>
 
             <label>Max Mentees Allowed:</label>
-            <input type="number" id="edit_max_mentees" required min="1">
+            <input type="number" id="edit_max_mentees" name="max_mentees" required min="1">
 
             <label>New Profile Photo (Optional):</label>
-            <input type="file" id="edit_photo" accept="image/*">
+            <input type="file" id="edit_photo" name="photo" accept="image/*">
 
             <button type="submit">Update</button>
             <button type="button" id="closeModalBtn" style="background-color: #6c757d;">Cancel</button>
