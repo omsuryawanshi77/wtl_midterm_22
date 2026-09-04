@@ -6,7 +6,6 @@ const closeModalBtn = document.getElementById('closeModalBtn');
 const statusMessage = document.getElementById('statusMessage');
 const mentorTableBody = document.getElementById('mentorTableBody');
 
-// Show notification banner
 function showSuccessMessage(message) {
     statusMessage.textContent = message;
     statusMessage.style.display = 'block';
@@ -15,13 +14,25 @@ function showSuccessMessage(message) {
     }, 3000);
 }
 
-// 1. Fetch & Load All Mentors from MySQL Database
+// 1. Fetch & Load All Mentors
 async function loadMentors() {
     try {
         const response = await fetch('fetch_mentors.php');
         const mentors = await response.json();
 
         mentorTableBody.innerHTML = '';
+
+        if (!Array.isArray(mentors) || mentors.length === 0) {
+            mentorTableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; color: #666; padding: 15px; font-weight: bold;">
+                        No mentor found
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
         mentors.forEach(m => {
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -45,10 +56,9 @@ async function loadMentors() {
     }
 }
 
-// Initial Load
 document.addEventListener('DOMContentLoaded', loadMentors);
 
-// 2. Form Validation
+// 2. Add Form Real-time Validation
 if (addMentorForm && submitBtn) {
     const validateForm = () => {
         submitBtn.disabled = !addMentorForm.checkValidity();
@@ -58,78 +68,109 @@ if (addMentorForm && submitBtn) {
 }
 
 // 3. Add Mentor (POST to add_mentor.php)
-addMentorForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(addMentorForm);
+if (addMentorForm) {
+    addMentorForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(addMentorForm);
 
-    const res = await fetch('add_mentor.php', {
-        method: 'POST',
-        body: formData
+        try {
+            const res = await fetch('add_mentor.php', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                showSuccessMessage(data.message);
+                addMentorForm.reset();
+                if (submitBtn) submitBtn.disabled = true;
+                loadMentors();
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            console.error("Add failed:", err);
+            alert("Failed to add mentor. Ensure Employee ID is unique.");
+        }
     });
-    const data = await res.json();
-
-    if (data.status === 'success') {
-        showSuccessMessage(data.message);
-        addMentorForm.reset();
-        submitBtn.disabled = true;
-        loadMentors();
-    } else {
-        alert(data.message);
-    }
-});
+}
 
 // 4. Open Edit Modal
-let currentEditId = null;
 function openEditModal(id, buttonElement) {
-    currentEditId = id;
     const row = buttonElement.closest('tr');
 
-    document.getElementById('edit_name').value = row.querySelector('.row-name').textContent;
-    document.getElementById('edit_emp_id').value = row.querySelector('.row-emp-id').textContent;
-    document.getElementById('edit_department').value = row.querySelector('.row-dept').textContent;
-    document.getElementById('edit_designation').value = row.querySelector('.row-desig').textContent;
-    document.getElementById('edit_max_mentees').value = row.querySelector('.row-max').textContent;
+    document.getElementById('edit_id').value = id;
+    document.getElementById('edit_name').value = row.querySelector('.row-name').textContent.trim();
+    document.getElementById('edit_emp_id').value = row.querySelector('.row-emp-id').textContent.trim();
+    document.getElementById('edit_department').value = row.querySelector('.row-dept').textContent.trim();
+    document.getElementById('edit_designation').value = row.querySelector('.row-desig').textContent.trim();
+    document.getElementById('edit_max_mentees').value = row.querySelector('.row-max').textContent.trim();
+    document.getElementById('edit_photo').value = '';
 
-    editModal.showModal();
+    if (editModal && typeof editModal.showModal === 'function') {
+        editModal.showModal();
+    } else if (editModal) {
+        editModal.style.display = 'block';
+    }
 }
 
 if (closeModalBtn) {
-    closeModalBtn.addEventListener('click', () => editModal.close());
+    closeModalBtn.addEventListener('click', () => {
+        if (editModal && typeof editModal.close === 'function') {
+            editModal.close();
+        } else if (editModal) {
+            editModal.style.display = 'none';
+        }
+    });
 }
 
 // 5. Submit Update (POST to update_mentor.php)
-editMentorForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(editMentorForm);
-    formData.append('id', currentEditId);
+if (editMentorForm) {
+    editMentorForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(editMentorForm);
 
-    const res = await fetch('update_mentor.php', {
-        method: 'POST',
-        body: formData
+        try {
+            const res = await fetch('update_mentor.php', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                showSuccessMessage(data.message);
+                if (editModal && typeof editModal.close === 'function') {
+                    editModal.close();
+                } else if (editModal) {
+                    editModal.style.display = 'none';
+                }
+                editMentorForm.reset();
+                loadMentors();
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            console.error("Update failed:", err);
+            alert("Failed to update mentor.");
+        }
     });
-    const data = await res.json();
+}
 
-    if (data.status === 'success') {
-        showSuccessMessage(data.message);
-        editModal.close();
-        editMentorForm.reset();
-        loadMentors();
-    } else {
-        alert(data.message);
-    }
-});
-
-// 6. Delete Mentor (GET to delete_mentor.php)
+// 6. Delete Mentor
 async function confirmDelete(id) {
     if (confirm("Are you sure you want to delete this mentor record?")) {
-        const res = await fetch(`delete_mentor.php?id=${id}`);
-        const data = await res.json();
+        try {
+            const res = await fetch(`delete_mentor.php?id=${id}`);
+            const data = await res.json();
 
-        if (data.status === 'success') {
-            showSuccessMessage(data.message);
-            loadMentors();
-        } else {
-            alert(data.message);
+            if (data.status === 'success') {
+                showSuccessMessage(data.message);
+                loadMentors();
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            console.error("Delete failed:", err);
         }
     }
 }
